@@ -1,0 +1,11 @@
+{%extends 'base.html'%}
+
+{% block head%} {%endblock%}
+{% block body%} 
+<a href="{{url_for('login')}}">LOGIN</a><br>
+<a href="{{url_for('signin')}}">SIGNIN</a>
+
+{%if session.get('username')%}
+<li>Name : {{session['username']}} </li>
+{%endif%}
+{%endblock%}
