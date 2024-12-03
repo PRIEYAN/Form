@@ -7,5 +7,6 @@
 
 {%if session.get('username')%}
 <li>Name : {{session['username']}} </li>
+<li>Welcome again {{session['username']}}</li>
 {%endif%}
 {%endblock%}

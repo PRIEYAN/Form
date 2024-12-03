@@ -1,12 +1,26 @@
 from flask import Flask, render_template, url_for, session, redirect, request
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+from authlib.integrations.flask_client import OAuth
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
+from flask_migrate import Migrate
+
+
+
+
 
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user.db'
-app.config['SECRET_KEY'] = 'OQKCNEJXJEJXL'
+app.secret_key = '\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<\
+!\xd5\xa2\xa0\x9fR"\xa1\xa8'
+app.config['GOOGLE'] = 'localhost:5050'
 db = SQLAlchemy(app)
+oauth=OAuth(app)
+admin=Admin(app)
+
+
 
 # Database Model
 class User(db.Model):
@@ -14,6 +28,12 @@ class User(db.Model):
     username = db.Column(db.String, nullable=False)
     email = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
+
+
+admin.add_view(ModelView(User,db.session))
+
+
+
 
 # Initialize the database
 with app.app_context():
@@ -27,11 +47,14 @@ def home():
 @app.route('/signin', methods=['POST', 'GET'])
 def signin():
     if request.method == 'POST':
+
         username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
+        #plan=request.form.get("subscription")
 
         # Check for existing user
+
         existingUsername = User.query.filter_by(username=username).first()
         existingEmail = User.query.filter_by(email=email).first()
         if existingEmail:
