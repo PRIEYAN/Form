@@ -11,20 +11,14 @@
     <p style="color: red;" >{{message}}</p>
     {%endif%}
     
-    <input type="radio" name="subscription" value="Starter">
-    <label for="Starter">Starter Pack</label><br>
-    <input type="radio" name="subscription" value="Pro">
-    <label for="pro">Pro Pack</label><br>  
-    <input type="radio" name="subscription" value="Expert">
-    <label for="expert">Expert Pack</label><br><br>
     
-    <a href="google/">
-    <img id="google"
-       src="https://img.shields.io/badge/Google-Connect-brightgreen?style=for-the-badge&labelColor=black&logo=google"
-       alt="Google"
-       
-       > <br>
+    <a href="{{ url_for('google_login') }}">
+        <img id="google"
+            src="https://img.shields.io/badge/Google-Connect-brightgreen?style=for-the-badge&labelColor=black&logo=google"
+            alt="Google"
+        >
     </a>
+    
     <input type="submit">
 </form>
 
