@@ -9,7 +9,14 @@
     <input type="password" placeholder="password" name="password" ><br> 
     {%if message%}
     <p style="color: red;" >{{message}}</p>
-    {%endif%}
+    {%endif%} 
+    
+    <a href="{{ url_for('google_login') }}">
+        <img id="google"
+            src="https://img.shields.io/badge/Google-Connect-brightgreen?style=for-the-badge&labelColor=black&logo=google"
+            alt="Google"
+        >
+    </a>
     <input type="submit">
 </form>
 

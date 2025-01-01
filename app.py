@@ -6,37 +6,30 @@ from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
 import os
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Load environment variables
 load_dotenv()
-print("Google Client ID:", os.getenv('GOOGLE_CLIENT_ID'))
-print("Google Client Secret:", os.getenv('GOOGLE_CLIENT_SECRET'))
-print("Secret Key:", os.getenv('SECRET_KEY'))
-# Secret key for session management
 app.secret_key = os.getenv('SECRET_KEY', '')
 
-# MongoDB connection setup
 client = MongoClient('mongodb://localhost:27017/')
 db = client.mydatabase
 users_collection = db['users']
 
-# OAuth setup
 oauth = OAuth(app)
+
 google = oauth.register(
     name='google',
-    client_id='CLIENT ID',
-    client_secret='SECRET ID',
+    client_id='ClientId',
+    client_secret='ClientSecret',
     authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    refresh_token_url=None,
-    api_base_url='https://www.googleapis.com/oauth2/v1/',
-    client_kwargs={'scope': 'openid profile email'},
+    access_token_url='https://oauth2.googleapis.com/token',
+    api_base_url='https://www.googleapis.com/oauth2/v3/',
+    client_kwargs={
+        'scope': 'openid profile email',
+    },
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
 )
 
-# MongoDB index creation for unique username and email
 with app.app_context():
     users_collection.create_index("username", unique=True)
     users_collection.create_index("email", unique=True)
@@ -50,50 +43,41 @@ def home():
 # Google login route
 @app.route('/google')
 def google_login():
-    redirect_uri = url_for('google_callback', _external=True)
+    redirect_uri = url_for("authorize_google", _external=True)
     return google.authorize_redirect(redirect_uri)
 
-# Google OAuth callback route
-@app.route('/google/callback')
-def google_callback():
-    token = google.authorize_access_token()  # Exchange code for access token
-    user_info = google.get('userinfo').json()  # Get user info from Google API
 
-    # Check if required keys exist in the user_info
-    username = user_info.get('name', 'Unnamed')  # Default to 'Unnamed' if name doesn't exist
-    email = user_info.get('email', '')
+@app.route("/authorize/google")
+def authorize_google():
+    token = google.authorize_access_token()
+    resp = google.get("userinfo")
+    user_info = resp.json()
 
-    if not email:
-        return "Error: Email not returned from Google."
+    userID = user_info.get("email")
 
-    # Check if the user already exists
-    existing_user = users_collection.find_one({"email": email})
-
-    if not existing_user:
-        # If the user doesn't exist, create a new user
+    # Check if user already exists, if not, insert into usersCollection
+    if not users_collection.find_one({"email": userID}):
         new_user = {
-            "username": username,
-            "email": email,
-            "google_id": user_info['id']
+            "username": user_info.get("given_name"),  # Or any other user info you want to store
+            "email": userID,
+            "password": None  # No password for Google OAuth users
         }
         users_collection.insert_one(new_user)
 
-    # Save user info to the session
     session['auth'] = 1
-    session['username'] = username
-    session['email'] = email
-
+    session['email'] = userID
+    session['username'] = user_info.get("given_name")  # Or store any other identifier you prefer
     return redirect(url_for('home'))
 
 # Sign up route
 @app.route('/signin', methods=['POST', 'GET'])
 def signin():
+
     if request.method == 'POST':
         username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
 
-        # Check if email or username already exists
         existing_email = users_collection.find_one({"email": email})
         existing_username = users_collection.find_one({"username": username})
 
@@ -104,7 +88,6 @@ def signin():
             message = "*Username already taken :)"
             return render_template('signin.html', message=message)
 
-        # Create new user
         hashed_password = generate_password_hash(password)
         new_user = {
             "username": username,
@@ -122,6 +105,7 @@ def signin():
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
